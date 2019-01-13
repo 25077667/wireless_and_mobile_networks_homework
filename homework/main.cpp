@@ -10,18 +10,18 @@ void create_divices(int numbers);
 bool* channels = (bool*)malloc(sizeof(bool) * 79);
 int collisions=0;
 int get_random_channel(){
-    srand(time(NULL));
-    //sleep(1);
-    return ((rand()%17)*(rand()%251)) % 80;
+    srand(time(NULL)+rand());
+    return ((rand()%17)*(rand()%23)) % 80;
 }
 
 
 int main(){
     memset(channels,0,sizeof(channels));
     printf("1. please wait\n");
-    for(int i=0; i<100;i++)
+    int i;
+    for(i=0; i<10000;i++)
         create_divices(2);
-    printf("collisions %d in 100 times.\n",collisions);
+    printf("collisions %d in %d times.\n",collisions,i);
     collisions = 0;
     return 0;
 }
@@ -33,18 +33,17 @@ void create_divices(int numbers){
     }
     //pthread_join(behavior,NULL);
 }
-int j=0;
 void* behavior(void*){
     int used = get_random_channel();
     if(channels[used] == true){
         collisions ++;
-        printf("%d %d \n",++j, used);
-        sleep(10);
+        printf("%d \n", used);
+        usleep(1);
         behavior(NULL);
     }
     else{
         channels[used] = true;
-        sleep(10);
+        usleep(1);
         channels[used] = false;
     }
     pthread_exit(NULL);
