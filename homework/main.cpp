@@ -9,9 +9,14 @@ void* behavior(void*);
 void create_divices(int numbers);
 bool* channels = (bool*)malloc(sizeof(bool) * 79);
 int collisions=0;
+int get_random_channel(){
+    srand(time(NULL));
+    //sleep(1);
+    return ((rand()%17)*(rand()%251)) % 80;
+}
+
 
 int main(){
-    srand(time(NULL));
     memset(channels,0,sizeof(channels));
     printf("1. please wait\n");
     for(int i=0; i<100;i++)
@@ -30,11 +35,12 @@ void create_divices(int numbers){
 }
 int j=0;
 void* behavior(void*){
-    int used = rand()%80;
+    int used = get_random_channel();
     if(channels[used] == true){
         collisions ++;
-        printf("%d\n",++j);
-        //behavior(NULL);
+        printf("%d %d \n",++j, used);
+        sleep(10);
+        behavior(NULL);
     }
     else{
         channels[used] = true;
