@@ -37,7 +37,7 @@ static void* behavior(void* times){
     int test_time = *(int*)(times);
     //printf("%d\n",test_time);
     usleep(backoff);
-    for(int i=0; i<test_time;i++){
+    for(int i=0; i<test_time*1600;i++){
         int use = get_random_channel();
         if(channels[use] == true){
             collisions ++;
