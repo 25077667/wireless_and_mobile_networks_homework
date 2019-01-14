@@ -5,9 +5,10 @@
 #include <string.h>
 #include <time.h>
 #define backoff 625
+#define hopping_rate 1600
 
-static void* behavior(void*);
 void create_divices(int device_mounts, int times);
+static void* behavior(void* times);
 bool* channels = (bool*)malloc(sizeof(bool) * 80);
 int collisions=0;
 int get_random_channel(){
@@ -15,29 +16,33 @@ int get_random_channel(){
     return ((rand()%17)*(rand()%23)) % 80;
 }
 
-
 int main(){
     memset(channels,0,sizeof(channels));
     printf("1. please wait\n");
-    create_divices(2,16000);
-    printf("collisions %d in %d times.\n",collisions,16000);
+    int testing_length = 2;
+    create_divices(2,testing_length);
+    printf("collisions %d in %d times.\n",collisions,testing_length*1000);
     collisions = 0;
     return 0;
 }
 
 void create_divices(int device_mounts, int times){
-    for(int i=0;i<device_mounts;i++){
-        pthread_t new_divice;
-        pthread_create(&new_divice, NULL, behavior,&times);
+        pthread_t* new_divice;
+        new_divice = (pthread_t*)malloc(sizeof(pthread_t)*device_mounts);
+
+        for(int i=0;i<device_mounts;i++)
+            pthread_create(&(new_divice[i]), NULL, behavior,&times);
+
         printf("AAAAAAAA\n");
-    }
-    //pthread_join(behavior,NULL);
+
+        for(int i=0;i<device_mounts;i++)
+            pthread_join((new_divice[i]),NULL);
 }
+
 static void* behavior(void* times){
     int test_time = *(int*)(times);
-    //printf("%d\n",test_time);
-    usleep(backoff);
-    for(int i=0; i<test_time*1600;i++){
+
+    for(int i=0; i<test_time*hopping_rate;i++){
         int use = get_random_channel();
         if(channels[use] == true){
             collisions ++;
