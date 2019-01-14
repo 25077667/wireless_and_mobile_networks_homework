@@ -7,60 +7,167 @@
 #define backoff 625
 #define hopping_rate 1600
 
-void create_divices(int device_mounts, int times);
-static void* behavior(void* times);
-bool* channels = (bool*)malloc(sizeof(bool) * 80);
+struct channel_struct{
+    bool is_using;
+    bool bad_channel;
+}channels[80];
+
+void Q2_create_divices(int device_mounts, int times, int select_function);
+static void* Q2_behavior(void* times);
+void* channel_sniffer(void*);
+void try_a_channel(int selection);
+static void* Q3_behavior(void* times);
+void initialize(){
+    pthread_t sniffer = (pthread_t)malloc(sizeof(pthread_t));
+    pthread_create(&(sniffer), NULL, channel_sniffer,NULL);
+}
+
 int collisions=0,hop=0;
+pthread_t sniffer;
 int get_random_channel(){
     srand(time(NULL)+rand());
     return ((rand()%17)*(rand()%23)+rand()) % 80;
 }
 
+
 int main(){
-    memset(channels,0,sizeof(channels));
+    initialize();
     printf("1. please wait\n");
-    int testing_length = 10;
-    create_divices(2,testing_length);
+    int testing_length = 2;
+    Q2_create_divices(2,testing_length,1);
     printf("collisions %d times and hopping %d times in %d seconds.\n",collisions,hop,testing_length);
 
     printf("2. please wait\n");
     for(int i=2;i<80;i++){
-        collisions = 0;
-        hop=0;
-        create_divices(i,testing_length);
+        hop = collisions = 0;
+        Q2_create_divices(i,testing_length,1);
         printf("there are %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
     }
+
+    printf("3. please wait\n");
+    for(int i=2;i<80;i++){
+        hop = collisions = 0;
+        Q2_create_divices(i,testing_length,2);
+        printf("there are %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+    }
+
     return 0;
 }
 
-void create_divices(int device_mounts, int times){
-        pthread_t* new_divice;
-        new_divice = (pthread_t*)malloc(sizeof(pthread_t)*device_mounts);
-
-        for(int i=0;i<device_mounts;i++){
-            pthread_create(&(new_divice[i]), NULL, behavior,&times);
-        }
-
-        for(int i=0;i<device_mounts;i++)
-            pthread_join((new_divice[i]),NULL);
+void try_a_channel(int selection){
+    if(channels[selection].is_using == true){
+        collisions ++;
+        usleep(backoff);
+    }
+    else{
+        channels[selection].is_using = true;
+        usleep(backoff);
+        channels[selection].is_using = false;
+    }
+    hop++;
 }
 
-static void* behavior(void* times){
-    int test_time = *(int*)(times);
-
-    for(int i=0; i<test_time*hopping_rate;i+=2){
-        int use = get_random_channel();
-        if(channels[use] == true){
-            collisions ++;
-            //printf("%d \n", use);
-            usleep(backoff);
-        }
-        else{
-            channels[use] = true;
-            usleep(backoff);
-            channels[use] = false;
-        }
-        hop++;
+void Q2_create_divices(int device_mounts, int times,int select_function){
+    void (*result)(void*);  //still have problems here!! couldn't compile
+    switch (select_function){
+    case 1:
+        result = &Q2_behavior;
+        break;
+    case 2:
+        result = &Q3_behavior;
+        break;
+    default:
+        result = &Q2_behavior;
+        printf("selection error!!\n");
     }
+
+    pthread_t* new_divice;
+    new_divice = (pthread_t*)malloc(sizeof(pthread_t)*device_mounts);
+    for(int i=0;i<device_mounts;i++)
+        pthread_create(&(new_divice[i]), NULL, result,&times);
+    for(int i=0;i<device_mounts;i++)
+        pthread_join((new_divice[i]),NULL);
+}
+
+static void* Q2_behavior(void* times){
+    int test_time = *(int*)(times);
+    for(int i=0; i<test_time*hopping_rate;i+=2)
+        try_a_channel(get_random_channel());
     pthread_exit(NULL);
+}
+
+void clean_all_channel(){
+    for(int i=0;i<80;i++)
+         channels[i].is_using = channels[i].bad_channel = false;    //initialize all channel to be normal channel
+}
+
+void* channel_sniffer(void*){
+    int channel_map[80][11] = {0};
+    clean_all_channel();
+    for(int i=0;i<10;i++){
+        for(int j=0;j<80;j++)
+            channel_map[i][j] = (int)channels[j].is_using;  //initialize the channel map
+        usleep(100000);     //sleep for 0.1 seconds
+    }
+    while(true){
+        for(int i=0;i<80;i++)
+            channel_map[10][i] += (int)channels[i].is_using;
+        memcpy(channel_map,&(channel_map[1][0]),sizeof(int)*80*10);
+
+        for(int i=0;i<80;i++){
+            int appeared = 0;
+            for(int j=0;j<10;j++)
+                appeared += channel_map[j][i];
+            if(appeared>5)
+                channels[i].bad_channel = true;
+        }
+        usleep(100000);     //sleep for 0.1 seconds
+    }
+}
+
+int search_nearby_normal_channel(int selection){
+    bool is_all_bad=true;
+    int result = -1;
+    for(int i=0;i<80;i++){
+        if(channels[i].bad_channel == false){
+            is_all_bad = false;
+            break;
+        }
+    }
+    if(is_all_bad){
+        return result;
+    }
+
+    //find left
+    int left=selection, right=selection;
+    while(left>0 && left--){
+        if(channels[left].bad_channel == false)
+            break;
+    }
+    //find right
+    while(right<80 && right++){
+        if(channels[right].bad_channel == false)
+            break;
+    }
+    if((selection-left)>(right - selection))
+        return right;   //the right way is closer then left way
+    else
+        return left;
+}
+
+static void* Q3_behavior(void* times){
+    int test_time = *(int*)(times);
+    for(int i=0; i<test_time*hopping_rate;i+=2){
+        //isomorphic try a channel
+        int selection = get_random_channel();
+        if (channels[selection].bad_channel == true){
+            int result = search_nearby_normal_channel(selection);
+            if(result == -1)
+                try_a_channel(get_random_channel());
+            else
+                try_a_channel(result);
+        }
+        else
+            try_a_channel(selection);
+    }
 }
