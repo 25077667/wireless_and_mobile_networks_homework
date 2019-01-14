@@ -10,7 +10,7 @@
 void create_divices(int device_mounts, int times);
 static void* behavior(void* times);
 bool* channels = (bool*)malloc(sizeof(bool) * 80);
-int collisions=0;
+int collisions=0,hop=0;
 int get_random_channel(){
     srand(time(NULL)+rand());
     return ((rand()%17)*(rand()%23)) % 80;
@@ -19,16 +19,17 @@ int get_random_channel(){
 int main(){
     memset(channels,0,sizeof(channels));
     printf("1. please wait\n");
-    int testing_length = 10;
+    int testing_length = 1;
     create_divices(2,testing_length);
-    printf("collisions %d in %d times.\n",collisions,testing_length*1000);
+    printf("collisions %d times and hopping %d times in %d seconds.\n",collisions,hop,testing_length);
 
-    /*printf("2. please wait\n");
+    printf("2. please wait\n");
     for(int i=2;i<80;i++){
         collisions = 0;
+        hop=0;
         create_divices(i,testing_length);
-        printf("there are %d devices collision %d in %d times.\n",i,collisions,testing_length*1000);
-    }*/
+        printf("there are %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+    }
     return 0;
 }
 
@@ -59,6 +60,7 @@ static void* behavior(void* times){
             usleep(backoff);
             channels[use] = false;
         }
+        hop++;
     }
     pthread_exit(NULL);
 }
