@@ -19,10 +19,16 @@ int get_random_channel(){
 int main(){
     memset(channels,0,sizeof(channels));
     printf("1. please wait\n");
-    int testing_length = 2;
+    int testing_length = 10;
     create_divices(2,testing_length);
     printf("collisions %d in %d times.\n",collisions,testing_length*1000);
-    collisions = 0;
+
+    /*printf("2. please wait\n");
+    for(int i=2;i<80;i++){
+        collisions = 0;
+        create_divices(i,testing_length);
+        printf("there are %d devices collision %d in %d times.\n",i,collisions,testing_length*1000);
+    }*/
     return 0;
 }
 
@@ -30,10 +36,9 @@ void create_divices(int device_mounts, int times){
         pthread_t* new_divice;
         new_divice = (pthread_t*)malloc(sizeof(pthread_t)*device_mounts);
 
-        for(int i=0;i<device_mounts;i++)
+        for(int i=0;i<device_mounts;i++){
             pthread_create(&(new_divice[i]), NULL, behavior,&times);
-
-        printf("AAAAAAAA\n");
+        }
 
         for(int i=0;i<device_mounts;i++)
             pthread_join((new_divice[i]),NULL);
@@ -42,11 +47,11 @@ void create_divices(int device_mounts, int times){
 static void* behavior(void* times){
     int test_time = *(int*)(times);
 
-    for(int i=0; i<test_time*hopping_rate;i++){
+    for(int i=0; i<test_time*hopping_rate;i+=2){
         int use = get_random_channel();
         if(channels[use] == true){
             collisions ++;
-            printf("%d \n", use);
+            //printf("%d \n", use);
             usleep(backoff);
         }
         else{
