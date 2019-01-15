@@ -13,10 +13,10 @@ struct channel_struct{
 }channels[80];
 
 void Q2_create_divices(int device_mounts, int times, int select_function);
-static void* Q2_behavior(void* times);
+void* Q2_behavior(void* times);
 void* channel_sniffer(void*);
 void try_a_channel(int selection);
-static void* Q3_behavior(void* times);
+void* Q3_behavior(void* times);
 void initialize(){
     pthread_t sniffer = (pthread_t)malloc(sizeof(pthread_t));
     pthread_create(&(sniffer), NULL, channel_sniffer,NULL);
@@ -38,17 +38,17 @@ int main(){
     printf("collisions %d times and hopping %d times in %d seconds.\n",collisions,hop,testing_length);
 
     printf("2. please wait\n");
-    for(int i=2;i<80;i++){
+    for(int i=2;i<=80;i++){
         hop = collisions = 0;
         Q2_create_divices(i,testing_length,1);
-        printf("there are %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        printf("Q2 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
     }
 
     printf("3. please wait\n");
-    for(int i=2;i<80;i++){
+    for(int i=2;i<=80;i++){
         hop = collisions = 0;
         Q2_create_divices(i,testing_length,2);
-        printf("there are %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        printf("Q3 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
     }
 
     return 0;
@@ -68,16 +68,16 @@ void try_a_channel(int selection){
 }
 
 void Q2_create_divices(int device_mounts, int times,int select_function){
-    void (*result)(void*);  //still have problems here!! couldn't compile
+    void* (*result)(void*);  //call function by pointer
     switch (select_function){
     case 1:
-        result = &Q2_behavior;
+        result = Q2_behavior;
         break;
     case 2:
-        result = &Q3_behavior;
+        result = Q3_behavior;
         break;
     default:
-        result = &Q2_behavior;
+        result = Q2_behavior;
         printf("selection error!!\n");
     }
 
@@ -89,7 +89,7 @@ void Q2_create_divices(int device_mounts, int times,int select_function){
         pthread_join((new_divice[i]),NULL);
 }
 
-static void* Q2_behavior(void* times){
+void* Q2_behavior(void* times){
     int test_time = *(int*)(times);
     for(int i=0; i<test_time*hopping_rate;i+=2)
         try_a_channel(get_random_channel());
@@ -155,7 +155,7 @@ int search_nearby_normal_channel(int selection){
         return left;
 }
 
-static void* Q3_behavior(void* times){
+void* Q3_behavior(void* times){
     int test_time = *(int*)(times);
     for(int i=0; i<test_time*hopping_rate;i+=2){
         //isomorphic try a channel
