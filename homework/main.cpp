@@ -16,7 +16,8 @@ void Q2_create_divices(int device_mounts, int times, int select_function);
 void* Q2_behavior(void* times);
 void* channel_sniffer(void*);
 void try_a_channel(int selection);
-void* Q3_behavior(void* times);
+void* Q3a_behavior(void* times);
+void* Q3b_behavior(void* times);
 void initialize(){
     pthread_t sniffer = (pthread_t)malloc(sizeof(pthread_t));
     pthread_create(&(sniffer), NULL, channel_sniffer,NULL);
@@ -48,7 +49,14 @@ int main(){
     for(int i=2;i<=80;i++){
         hop = collisions = 0;
         Q2_create_divices(i,testing_length,2);
-        printf("Q3 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        printf("Q3(a) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+    }
+
+    printf("\n\n");
+    for(int i=2;i<=80;i++){
+        hop = collisions = 0;
+        Q2_create_divices(i,testing_length,3);
+        printf("Q3(b) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
     }
 
     return 0;
@@ -75,7 +83,10 @@ void Q2_create_divices(int device_mounts, int times,int select_function){
         result = Q2_behavior;
         break;
     case 2:
-        result = Q3_behavior;
+        result = Q3a_behavior;
+        break;
+    case 3:
+        result = Q3b_behavior;
         break;
     default:
         result = Q2_behavior;
@@ -141,37 +152,79 @@ int search_nearby_normal_channel(int selection){
 
     //find left
     int left=selection, right=selection;
-    while(left>0 && left--){
+    while(--left && left>0){
         if(channels[left].bad_channel == false && channels[left].is_using==false)
             break;
     }
     //find right
-    while(right<80 && right++){
+    while(++right && right<79){
         if(channels[right].bad_channel == false && channels[right].is_using==false)
             break;
     }
 
-    if((selection-left)>(right - selection)){
-        if(right == 80)
-            return get_random_channel();
-        else
-            return right;   //the right way is closer then left way
-    }
-    else{
-        if(left==0)
-            return get_random_channel();
-        else
-            return left;
-    }
+    if((selection-left)>(right - selection))
+        result = (right==79)?selection:right;
+    else
+        result = (left==0)?selection:left;
+    return result;
 }
 
-void* Q3_behavior(void* times){
+void* Q3a_behavior(void* times){
     int test_time = *(int*)(times);
     for(int i=0; i<test_time*hopping_rate;i+=2){
         //isomorphic try a channel
         int selection = get_random_channel();
         if (channels[selection].bad_channel == true){
             int result = search_nearby_normal_channel(selection);
+            if(result == -1)
+                try_a_channel(get_random_channel());
+            else
+                try_a_channel(result);
+        }
+        else
+            try_a_channel(selection);
+    }
+}
+
+int search_far_normal_channel(int selection){
+    bool is_all_bad=true;
+    int result = -1;
+    for(int i=0;i<80;i++){
+        if(channels[i].bad_channel == false){
+            is_all_bad = false;
+            break;
+        }
+    }
+    if(is_all_bad){
+        return result;
+    }
+
+    //find left
+    int left=0, right=79;
+    while(left++ && left!=selection){
+        if(channels[left].bad_channel == false && channels[left].is_using==false)
+            break;
+    }
+    //find right
+    while(right-- && right!=selection){
+        if(channels[right].bad_channel == false && channels[right].is_using==false)
+            break;
+    }
+
+    if((selection-left)>(right - selection))
+        result = (left==0)?selection:left;
+    else
+        result = (right==79)?selection:right;
+    return result;
+}
+
+void* Q3b_behavior(void* times){
+        int test_time = *(int*)(times);
+    for(int i=0; i<test_time*hopping_rate;i+=2){
+        //isomorphic Q3b_behavior
+        int selection = get_random_channel();
+        if (channels[selection].bad_channel == true){
+            int result = search_far_normal_channel(selection);
             if(result == -1)
                 try_a_channel(get_random_channel());
             else
