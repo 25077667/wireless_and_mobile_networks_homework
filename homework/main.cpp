@@ -57,6 +57,7 @@ int main(){
 void try_a_channel(int selection){
     if(channels[selection].is_using == true){
         collisions ++;
+        //printf("%d ",selection);
         usleep(backoff);
     }
     else{
@@ -141,18 +142,27 @@ int search_nearby_normal_channel(int selection){
     //find left
     int left=selection, right=selection;
     while(left>0 && left--){
-        if(channels[left].bad_channel == false)
+        if(channels[left].bad_channel == false && channels[left].is_using==false)
             break;
     }
     //find right
     while(right<80 && right++){
-        if(channels[right].bad_channel == false)
+        if(channels[right].bad_channel == false && channels[right].is_using==false)
             break;
     }
-    if((selection-left)>(right - selection))
-        return right;   //the right way is closer then left way
-    else
-        return left;
+
+    if((selection-left)>(right - selection)){
+        if(right == 80)
+            return get_random_channel();
+        else
+            return right;   //the right way is closer then left way
+    }
+    else{
+        if(left==0)
+            return get_random_channel();
+        else
+            return left;
+    }
 }
 
 void* Q3_behavior(void* times){
