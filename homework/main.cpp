@@ -26,6 +26,7 @@ void* Q3a_behavior(void* times);
 void* Q3b_behavior(void* times);
 void* Q3c_behavior(void* times);
 void* Q3d_behavior(void* times);
+void* Q4_behavior(void* times);
 void* Q5_behavior(void* times);
 
 int collisions=0,hop=0;
@@ -67,6 +68,10 @@ void initialize(){
 int main(){
     initialize();
     int testing_length = 2;
+
+    FILE* file_pointer;
+    file_pointer = fopen("result.txt","w");
+
     printf("1. please wait\n");
     create_divices(2,testing_length,1);
     printf("collisions %d times and hopping %d times in %d seconds.\n",collisions,hop,testing_length);
@@ -76,44 +81,58 @@ int main(){
         hop = collisions = 0;
         create_divices(i,testing_length,1);
         printf("Q2 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q2\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
 
     printf("3. please wait\na.\n");
-    for(int i=2;i<=4;i++){
+    for(int i=2;i<=total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,2);
         printf("Q3(a) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q3(a)\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
 
     printf("\nb.\n");
-    for(int i=2;i<=4;i++){
+    for(int i=2;i<=total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,3);
         printf("Q3(b) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q3(b)\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
 
     printf("\nc.\n");
-    for(int i=2;i<=4;i++){
+    for(int i=2;i<=total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,4);
         printf("Q3(c) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q3(c)\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
 
     printf("\nd.\n");
-    for(int i=2;i<=4;i++){
+    for(int i=2;i<=total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,5);
         printf("Q3(d) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q3(d)\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
 
-    //Q4 want to use CSMA/CA
+    printf("4. please wait.\n");
+    for(int i=2;i<total_channel;i++){
+        hop = collisions =0;
+        create_divices(i,testing_length,6);
+        printf("Q4 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q4\t%d\t%d\t%d\r\n",i,collisions,hop);
+    }
+
     //Q5 is a bad code, using Set theory to solve it, but it seems to be bad
     printf("5. please wait.\n");
     for(int i=2;i<total_channel;i++){
         hop = collisions =0;
         create_divices(i,testing_length,7);
         printf("Q5 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+        fprintf(file_pointer,"Q5\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
+    fclose(file_pointer);
     return 0;
 }
 
@@ -140,8 +159,10 @@ void* channel_sniffer(void*){
             int appeared = 0;
             for(int j=0;j<10;j++)
                 appeared += channel_map[j][i];
-            if(appeared>5)
+            if(appeared>6)
                 channels[i].bad_channel = true;
+            else
+                channels[i].bad_channel = false;
         }
         usleep(100000);     //sleep for 0.1 seconds
     }
@@ -180,6 +201,7 @@ void create_divices(int device_mounts, int times,int select_function){
         result = Q3d_behavior;
         break;
     case 6:
+        result = Q4_behavior;
         break;
     case 7:
         result = Q5_behavior;
@@ -289,7 +311,7 @@ int search_far_normal_channel(int selection){
 void* Q3b_behavior(void* times){
     int test_time = *(int*)(times);
     for(int i=0; i<test_time*hopping_rate;i+=2){
-        //isomorphic Q3b_behavior
+        //isomorphic Q3a_behavior
         int selection = get_random_channel(total_channel);
         if (channels[selection].bad_channel == true){
             int result = search_far_normal_channel(selection);
@@ -310,13 +332,8 @@ int get_normal_channel_by_random(){
         if(channels[i].is_using == false && channels[i].bad_channel == false)
             good_channel.push_back(i);
 
-    //for(int i=0;i<good_channel.size();i++)
-        //printf("%d ",good_channel[i]);
-    //printf("%d ",good_channel[get_random_channel(good_channel.size())]);
-    //if(!good_channel.empty())
     result = (good_channel.empty())? -1 :good_channel[get_random_channel(good_channel.size())];
-    //printf("%d\n",result);    //why "good_channel.empty()" will return true while good_channel is not empty for sometimes??????
-    good_channel.clear();       //something strange
+    good_channel.clear();
     return result;
 }
 
@@ -346,6 +363,27 @@ void* Q3d_behavior(void* times){
             try_a_channel(get_random_channel(total_channel));
         else
             try_a_channel(selection);
+    }
+}
+
+void* Q4_behavior(void* times){
+    int test_time = *(int*)(times);
+    for(int i=0;i<test_time*hopping_rate;i+=2){
+        int opportunity = get_random_channel(100);
+        if(opportunity>30){
+            //70% of devices goto 30% of channel
+            int selection = (int)get_random_channel(total_channel)*0.3;
+            if(channels[selection].bad_channel == true){
+                selection = get_normal_channel_by_random();
+                try_a_channel(selection);
+            }
+            else
+                try_a_channel(selection);
+        }
+        else{
+            int selection = (int)get_random_channel(total_channel)*0.7;
+            try_a_channel(selection);
+        }
     }
 }
 
