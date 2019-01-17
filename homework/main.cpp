@@ -78,7 +78,7 @@ int main(){
         printf("Q2 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
     }
 
-    /*printf("3. please wait\na.\n");
+    printf("3. please wait\na.\n");
     for(int i=2;i<=4;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,2);
@@ -108,7 +108,7 @@ int main(){
 
     //Q4 want to use CSMA/CA
     //Q5 the result will put it in the graphs
-    */printf("5. please wait.\n");
+    printf("5. please wait.\n");
     for(int i=2;i<total_channel;i++){
         hop = collisions =0;
         create_divices(i,testing_length,7);
