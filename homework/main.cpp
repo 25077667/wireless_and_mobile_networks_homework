@@ -5,9 +5,11 @@
 #include <string.h>
 #include <time.h>
 #include <vector>
+#include <cmath>
 #define backoff 625
 #define hopping_rate 1600
 #define total_channel 80
+#define standard_radius 3.4225704501373
 
 using namespace std;
 
@@ -24,34 +26,59 @@ void* Q3a_behavior(void* times);
 void* Q3b_behavior(void* times);
 void* Q3c_behavior(void* times);
 void* Q3d_behavior(void* times);
-void initialize(){
-    pthread_t sniffer = (pthread_t)malloc(sizeof(pthread_t));
-    pthread_create(&(sniffer), NULL, channel_sniffer,NULL);
-}
+void* Q5_behavior(void* times);
 
 int collisions=0,hop=0;
-pthread_t sniffer;
 int get_random_channel(int module){
     srand(time(NULL)+rand());
     return ((rand()%17)*(rand()%23)+rand()) % module;
 }
+bool* A1 = (bool*)malloc(sizeof(bool)*20);
+bool* A2 = (bool*)malloc(sizeof(bool)*20);
+bool* A3 = (bool*)malloc(sizeof(bool)*20);
+bool* B1 = (bool*)malloc(sizeof(bool)*20);
+bool* B2 = (bool*)malloc(sizeof(bool)*20);
+bool* B3 = (bool*)malloc(sizeof(bool)*20);
+bool* C1 = (bool*)malloc(sizeof(bool)*20);
+bool* C2 = (bool*)malloc(sizeof(bool)*20);
+bool* C3 = (bool*)malloc(sizeof(bool)*20);
+bool* D1 = (bool*)malloc(sizeof(bool)*20);
+bool* D2 = (bool*)malloc(sizeof(bool)*20);
+bool* D3 = (bool*)malloc(sizeof(bool)*20);
 
+void initialize(){
+    memset(A1,0,sizeof(bool)*20);
+    memset(A2,0,sizeof(bool)*20);
+    memset(A3,0,sizeof(bool)*20);
+    memset(B1,0,sizeof(bool)*20);
+    memset(B2,0,sizeof(bool)*20);
+    memset(B3,0,sizeof(bool)*20);
+    memset(C1,0,sizeof(bool)*20);
+    memset(C2,0,sizeof(bool)*20);
+    memset(C3,0,sizeof(bool)*20);
+    memset(D1,0,sizeof(bool)*20);
+    memset(D2,0,sizeof(bool)*20);
+    memset(D3,0,sizeof(bool)*20);
+
+    pthread_t sniffer = (pthread_t)malloc(sizeof(pthread_t));
+    pthread_create(&(sniffer), NULL, channel_sniffer,NULL);
+}
 
 int main(){
     initialize();
-    int testing_length = 10;
+    int testing_length = 2;
     printf("1. please wait\n");
     create_divices(2,testing_length,1);
     printf("collisions %d times and hopping %d times in %d seconds.\n",collisions,hop,testing_length);
 
     printf("2. please wait\n");
-    for(int i=2;i<=4;i++){
+    for(int i=2;i<=total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,1);
         printf("Q2 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
     }
 
-    printf("3. please wait\na.\n");
+    /*printf("3. please wait\na.\n");
     for(int i=2;i<=4;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,2);
@@ -80,30 +107,36 @@ int main(){
     }
 
     //Q4 want to use CSMA/CA
-
+    //Q5 the result will put it in the graphs
+    */printf("5. please wait.\n");
+    for(int i=2;i<total_channel;i++){
+        hop = collisions =0;
+        create_divices(i,testing_length,7);
+        printf("Q5 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
+    }
     return 0;
 }
 
 
 void clean_all_channel(){
-    for(int i=0;i<80;i++)
+    for(int i=0;i<total_channel;i++)
          channels[i].is_using = channels[i].bad_channel = false;    //initialize all channel to be normal channel
 }
 
 void* channel_sniffer(void*){
-    int channel_map[80][11] = {0};
+    int channel_map[81][11] = {0};
     clean_all_channel();
     for(int i=0;i<10;i++){
-        for(int j=0;j<80;j++)
+        for(int j=0;j<total_channel;j++)
             channel_map[i][j] = (int)channels[j].is_using;  //initialize the channel map
         usleep(100000);     //sleep for 0.1 seconds
     }
     while(true){
-        for(int i=0;i<80;i++)
+        for(int i=0;i<total_channel;i++)
             channel_map[10][i] += (int)channels[i].is_using;
-        memcpy(channel_map,&(channel_map[1][0]),sizeof(int)*80*10);
+        memcpy(channel_map,&(channel_map[1][0]),sizeof(int)*total_channel*10);
 
-        for(int i=0;i<80;i++){
+        for(int i=0;i<total_channel;i++){
             int appeared = 0;
             for(int j=0;j<10;j++)
                 appeared += channel_map[j][i];
@@ -145,6 +178,11 @@ void create_divices(int device_mounts, int times,int select_function){
         break;
     case 5:
         result = Q3d_behavior;
+        break;
+    case 6:
+        break;
+    case 7:
+        result = Q5_behavior;
         break;
     default:
         result = Q2_behavior;
@@ -308,5 +346,178 @@ void* Q3d_behavior(void* times){
             try_a_channel(get_random_channel(total_channel));
         else
             try_a_channel(selection);
+    }
+}
+
+int get_random_value(){
+    srand(time(NULL)+rand());
+    return ((rand()%97)*(rand()%23)+rand()) % 11;
+}
+
+void try_it(bool* location,bool* location1,int selection){
+    if((location1) == NULL){
+        if(location[selection] == true){
+            collisions++;
+            usleep(backoff);
+        }
+        else{
+            location[selection] = true;
+            usleep(backoff);
+            location[selection] = false;
+        }
+    }
+    else{
+        if(location[selection] == true){
+            collisions++;
+            usleep(backoff);
+        }
+        else if(location1[selection]==true){
+            collisions ++;
+            usleep(backoff);
+        }
+        else{
+            location[selection] = true;
+            location1[selection]=true;
+            usleep(backoff);
+            location[selection] = false;
+            location1[selection] = false;
+        }
+    }
+    hop++;
+}
+
+void* Q5_behavior(void* times){
+    int test_time = *(int*)(times);
+    for(int i=0; i<test_time*hopping_rate;i+=2){
+
+    int device_x = get_random_value()*get_random_value()%11;
+    int device_y = get_random_value()*get_random_value()%11;
+    long double first_center_x = 10-standard_radius/sqrt(2);
+    long double first_center_y = standard_radius/sqrt(2);
+    long double second_center_x = standard_radius/sqrt(2);
+    long double second_center_y = standard_radius/sqrt(2);
+    long double third_center_x = standard_radius/sqrt(2);
+    long double third_center_y = 10-standard_radius/sqrt(2);
+    long double fourth_center_x = 10-standard_radius/sqrt(2);
+    long double fourth_center_y = 10-standard_radius/sqrt(2);
+    long double radius1 = sqrt((first_center_x-device_x)*(first_center_x-device_x)+(first_center_y-device_y)*(first_center_y-device_y));
+    long double radius2 = sqrt((second_center_x-device_x)*(second_center_x-device_x)+(second_center_y-device_y)*(second_center_y-device_y));
+    long double radius3 = sqrt((third_center_x-device_x)*(third_center_x-device_x)+(third_center_y-device_y)*(third_center_y-device_y));
+    long double radius4 = sqrt((fourth_center_x-device_x)*(fourth_center_x-device_x)+(fourth_center_y-device_y)*(fourth_center_y-device_y));
+
+    if(radius1<standard_radius){
+        if(radius2<standard_radius){
+            //A1B1C1D1
+            int get_channel = get_random_channel(total_channel);
+            if(get_channel<20)
+                try_it(A1,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(B1,NULL,get_channel-20);
+            else if(get_channel<60)
+                try_it(C1,NULL,get_channel-40);
+            else
+                try_it(D1,NULL,get_channel-60);
+        }
+        else if(radius4<standard_radius){
+            //A1B2C2D1
+            int get_channel = get_random_channel(total_channel);
+            if(get_channel<20)
+                try_it(A1,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(B2,NULL,get_channel-20);
+            else if(get_channel<60)
+                try_it(C2,NULL,get_channel-40);
+            else
+                try_it(D1,NULL,get_channel-60);
+        }
+        else{
+            //A1C1C2D1
+            int get_channel = get_random_channel(total_channel-20);
+            if(get_channel<20)
+                try_it(A1,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(C1,C2,get_channel-20);
+            else
+                try_it(D1,NULL,get_channel-40);
+        }
+    }
+    else if(radius2<standard_radius){
+        if(radius3<standard_radius){
+            //A2B1C1D2
+            int get_channel = get_random_channel(total_channel);
+            if(get_channel<20)
+                try_it(A2,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(B1,NULL,get_channel-20);
+            else if(get_channel<60)
+                try_it(C1,NULL,get_channel-40);
+            else
+                try_it(D2,NULL,get_channel-60);
+        }
+        else{
+            //B1C1D1D2
+            int get_channel = get_random_channel(total_channel-20);
+            if(get_channel<20)
+                try_it(B1,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(C1,NULL,get_channel-20);
+            else
+                try_it(D1,D2,get_channel-40);
+        }
+    }
+    else if(radius3<standard_radius){
+        if(radius4<standard_radius){
+            //A2B2C2D2
+            int get_channel = get_random_channel(total_channel);
+            if(get_channel<20)
+                try_it(A2,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(B2,NULL,get_channel-20);
+            else if(get_channel<60)
+                try_it(C2,NULL,get_channel-40);
+            else
+                try_it(D2,NULL,get_channel-60);
+        }
+        else{
+            //A2B1B2D2
+            int get_channel = get_random_channel(total_channel-20);
+            if(get_channel<20)
+                try_it(A2,NULL,get_channel);
+            else if(get_channel<40)
+                try_it(B1,B2,get_channel-20);
+            else
+                try_it(D2,NULL,get_channel-40);
+        }
+    }
+    else if(radius4<standard_radius){
+        //A1A2B2C2
+        int get_channel = get_random_channel(total_channel-20);
+        if(get_channel<20)
+            try_it(A1,A2,get_channel);
+        else if(get_channel<40)
+            try_it(B2,NULL,get_channel-20);
+        else
+            try_it(C2,NULL,get_channel-40);
+    }
+
+    else{
+        int get_channel = get_random_channel(20);
+        if(device_x>=5 && device_y<=5){
+            //First quadrant, listen B
+            try_it(B3,NULL,get_channel);
+        }
+        else if(device_x<5 && device_y<=5){
+            //Second quadrant, listen A
+            try_it(A3,NULL,get_channel);
+        }
+        else if(device_x<5 && device_y>5){
+            //Third quadrant, listen C
+            try_it(C3,NULL,get_channel);
+        }
+        else{
+            //Fourth quadrant, listen D
+            try_it(D3,NULL,get_channel);
+        }
+    }
     }
 }
