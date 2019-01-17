@@ -107,7 +107,7 @@ int main(){
     }
 
     //Q4 want to use CSMA/CA
-    //Q5 the result will put it in the graphs
+    //Q5 is a bad code, using Set theory to solve it, but it seems to be bad
     printf("5. please wait.\n");
     for(int i=2;i<total_channel;i++){
         hop = collisions =0;
