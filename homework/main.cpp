@@ -19,9 +19,10 @@ struct channel_struct{
 }channels[80];
 
 void create_divices(int device_mounts, int times, int select_function);
-void* Q2_behavior(void* times);
 void* channel_sniffer(void*);
+void* enhance_channel_sniffer(void*);
 void try_a_channel(int selection);
+void* Q2_behavior(void* times);
 void* Q3a_behavior(void* times);
 void* Q3b_behavior(void* times);
 void* Q3c_behavior(void* times);
@@ -46,6 +47,7 @@ bool* C3 = (bool*)malloc(sizeof(bool)*20);
 bool* D1 = (bool*)malloc(sizeof(bool)*20);
 bool* D2 = (bool*)malloc(sizeof(bool)*20);
 bool* D3 = (bool*)malloc(sizeof(bool)*20);
+bool time_for_Q4=false;
 
 void initialize(){
     memset(A1,0,sizeof(bool)*20);
@@ -63,6 +65,8 @@ void initialize(){
 
     pthread_t sniffer = (pthread_t)malloc(sizeof(pthread_t));
     pthread_create(&(sniffer), NULL, channel_sniffer,NULL);
+    pthread_t enhace_sniffer = (pthread_t)malloc(sizeof(pthread_t));
+    pthread_create(&(enhace_sniffer), NULL, enhance_channel_sniffer,NULL);
 }
 
 int main(){
@@ -77,7 +81,7 @@ int main(){
     printf("collisions %d times and hopping %d times in %d seconds.\n",collisions,hop,testing_length);
 
     printf("2. please wait\n");
-    for(int i=2;i<=total_channel;i++){
+    for(int i=2;i<total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,1);
         printf("Q2 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
@@ -85,7 +89,7 @@ int main(){
     }
 
     printf("3. please wait\na.\n");
-    for(int i=2;i<=total_channel;i++){
+    for(int i=2;i<total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,2);
         printf("Q3(a) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
@@ -93,7 +97,7 @@ int main(){
     }
 
     printf("\nb.\n");
-    for(int i=2;i<=total_channel;i++){
+    for(int i=2;i<total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,3);
         printf("Q3(b) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
@@ -101,7 +105,7 @@ int main(){
     }
 
     printf("\nc.\n");
-    for(int i=2;i<=total_channel;i++){
+    for(int i=2;i<total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,4);
         printf("Q3(c) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
@@ -109,7 +113,7 @@ int main(){
     }
 
     printf("\nd.\n");
-    for(int i=2;i<=total_channel;i++){
+    for(int i=2;i<total_channel;i++){
         hop = collisions = 0;
         create_divices(i,testing_length,5);
         printf("Q3(d) %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
@@ -117,14 +121,17 @@ int main(){
     }
 
     printf("4. please wait.\n");
+    time_for_Q4 = true;
     for(int i=2;i<total_channel;i++){
         hop = collisions =0;
         create_divices(i,testing_length,6);
         printf("Q4 %d devices collision %d and hopping %d times in %d seconds.\n",i,collisions,hop,testing_length);
         fprintf(file_pointer,"Q4\t%d\t%d\t%d\r\n",i,collisions,hop);
     }
+    time_for_Q4 = false;
 
     //Q5 is a bad code, using Set theory to solve it, but it seems to be bad
+
     printf("5. please wait.\n");
     for(int i=2;i<total_channel;i++){
         hop = collisions =0;
@@ -143,7 +150,7 @@ void clean_all_channel(){
 }
 
 void* channel_sniffer(void*){
-    int channel_map[81][11] = {0};
+    int channel_map[80][11] = {0};
     clean_all_channel();
     for(int i=0;i<10;i++){
         for(int j=0;j<total_channel;j++)
@@ -151,6 +158,8 @@ void* channel_sniffer(void*){
         usleep(100000);     //sleep for 0.1 seconds
     }
     while(true){
+        if(time_for_Q4) continue;
+
         for(int i=0;i<total_channel;i++)
             channel_map[10][i] += (int)channels[i].is_using;
         memcpy(channel_map,&(channel_map[1][0]),sizeof(int)*total_channel*10);
@@ -160,6 +169,37 @@ void* channel_sniffer(void*){
             for(int j=0;j<10;j++)
                 appeared += channel_map[j][i];
             if(appeared>6)
+                channels[i].bad_channel = true;
+            else
+                channels[i].bad_channel = false;
+        }
+        usleep(100000);     //sleep for 0.1 seconds
+    }
+}
+
+void* enhance_channel_sniffer(void*){
+    int channel_map[80][11] = {0};
+    clean_all_channel();
+    for(int i=0;i<10;i++){
+        for(int j=0;j<total_channel;j++)
+            channel_map[i][j] = (int)channels[j].is_using;  //initialize the channel map
+        usleep(100000);     //sleep for 0.1 seconds
+    }
+    while(true){
+        if(!time_for_Q4) continue;
+        for(int i=0;i<total_channel;i++)
+            channel_map[10][i] += (int)channels[i].is_using;
+        memcpy(channel_map,&(channel_map[1][0]),sizeof(int)*total_channel*10);
+
+        double using_counter=0;
+        for(int i=0;i<sizeof(channel_map);i++)
+            using_counter ++;
+
+        for(int i=0;i<total_channel;i++){
+            int appeared = 0;
+            for(int j=0;j<10;j++)
+                appeared += channel_map[j][i];
+            if(appeared>round(using_counter/10))
                 channels[i].bad_channel = true;
             else
                 channels[i].bad_channel = false;
@@ -369,21 +409,11 @@ void* Q3d_behavior(void* times){
 void* Q4_behavior(void* times){
     int test_time = *(int*)(times);
     for(int i=0;i<test_time*hopping_rate;i+=2){
-        int opportunity = get_random_channel(100);
-        if(opportunity>30){
-            //70% of devices goto 30% of channel
-            int selection = (int)get_random_channel(total_channel)*0.3;
-            if(channels[selection].bad_channel == true){
-                selection = get_normal_channel_by_random();
-                try_a_channel(selection);
-            }
-            else
-                try_a_channel(selection);
-        }
-        else{
-            int selection = (int)get_random_channel(total_channel)*0.7;
+        int selection = get_normal_channel_by_random();
+        if (selection == -1)
+            try_a_channel(get_random_channel(total_channel));
+        else
             try_a_channel(selection);
-        }
     }
 }
 
