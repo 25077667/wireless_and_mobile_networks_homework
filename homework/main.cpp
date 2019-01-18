@@ -71,10 +71,10 @@ void initialize(){
 
 int main(){
     initialize();
-    int testing_length = 2;
+    int testing_length = 2; //2 seconds
 
     FILE* file_pointer;
-    file_pointer = fopen("result.txt","w");
+    file_pointer = fopen("result5.txt","w");
 
     printf("1. please wait\n");
     create_divices(2,testing_length,1);
@@ -131,7 +131,6 @@ int main(){
     time_for_Q4 = false;
 
     //Q5 is a bad code, using Set theory to solve it, but it seems to be bad
-
     printf("5. please wait.\n");
     for(int i=2;i<total_channel;i++){
         hop = collisions =0;
