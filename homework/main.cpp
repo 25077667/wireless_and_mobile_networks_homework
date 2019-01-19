@@ -6,6 +6,7 @@
 #include <time.h>
 #include <vector>
 #include <cmath>
+#include <random>
 #define backoff 625
 #define hopping_rate 1600
 #define total_channel 80
@@ -32,8 +33,11 @@ void* Q5_behavior(void* times);
 
 int collisions=0,hop=0;
 int get_random_channel(int module){
-    srand(time(NULL)+rand());
-    return ((rand()%17)*(rand()%23)+rand()) % module;
+    //srand(time(NULL)+rand());
+    random_device rd;
+    mt19937_64 mt_rand(rd());
+    //printf("%d\n",mt_rand()%80);
+    return mt_rand()% module;
 }
 bool* A1 = (bool*)malloc(sizeof(bool)*20);
 bool* A2 = (bool*)malloc(sizeof(bool)*20);
@@ -416,11 +420,6 @@ void* Q4_behavior(void* times){
     }
 }
 
-int get_random_value(){
-    srand(time(NULL)+rand());
-    return ((rand()%97)*(rand()%23)+rand()) % 11;
-}
-
 void try_it(bool* location,bool* location1,int selection){
     if((location1) == NULL){
         if(location[selection] == true){
@@ -457,8 +456,8 @@ void* Q5_behavior(void* times){
     int test_time = *(int*)(times);
     for(int i=0; i<test_time*hopping_rate;i+=2){
 
-    int device_x = get_random_value()*get_random_value()%11;
-    int device_y = get_random_value()*get_random_value()%11;
+    int device_x = get_random_channel(11);
+    int device_y = get_random_channel(11);
     long double first_center_x = 10-standard_radius/sqrt(2);
     long double first_center_y = standard_radius/sqrt(2);
     long double second_center_x = standard_radius/sqrt(2);
