@@ -9,7 +9,6 @@
 #include <random>
 #define backoff 625
 #define hopping_rate 1600
-#define total_channel 80
 #define standard_radius 3.4225704501373
 
 using namespace std;
@@ -18,7 +17,7 @@ struct channel_struct{
     bool is_using;
     bool bad_channel;
 }channels[80];
-
+int total_channel=80;
 void create_divices(int device_mounts, int times, int select_function);
 void* channel_sniffer(void*);
 void* enhance_channel_sniffer(void*);
